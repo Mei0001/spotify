@@ -14,6 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { code, error } = req.query;
 
   if (error || !code) {
+    res.setHeader("Content-Type", "text/plain");
     res.status(400).send(`Authorization failed: ${error || "no code received"}`);
     return;
   }
@@ -42,6 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!tokenRes.ok) {
     const errBody = await tokenRes.text();
+    res.setHeader("Content-Type", "text/plain");
     res.status(500).send(`Token exchange failed: ${tokenRes.status} ${errBody}`);
     return;
   }
@@ -70,6 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const tokenJsonEscaped = tokenJson.replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
 
   res.setHeader("Content-Type", "text/html");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   res.send(`<!DOCTYPE html>
 <html lang="ja">
 <head>

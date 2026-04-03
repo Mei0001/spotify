@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
 import { saveTokens, type TokenData } from "./token-store.js";
 
 const AUTH_SERVER_URL = process.env.AUTH_SERVER_URL || "https://spotify-blue-psi.vercel.app";
@@ -12,7 +12,8 @@ export async function authorize(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
-      res.setHeader("Access-Control-Allow-Origin", "*");
+      // CORS: only allow requests from the auth server
+      res.setHeader("Access-Control-Allow-Origin", AUTH_SERVER_URL);
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -26,11 +27,19 @@ export async function authorize(): Promise<void> {
 
       if (url.pathname === "/receive-token" && req.method === "POST") {
         let body = "";
+        let aborted = false;
         req.on("data", (chunk: Buffer) => {
           body += chunk.toString();
+          if (body.length > 10_000) {
+            aborted = true;
+            res.writeHead(413);
+            res.end("Payload too large");
+            req.destroy();
+          }
         });
 
         req.on("end", () => {
+          if (aborted) return;
           try {
             const tokenData = JSON.parse(body) as TokenData;
 
@@ -78,7 +87,8 @@ export async function authorize(): Promise<void> {
         console.error("\nNo SPOTIFY_CLIENT_ID set. Opening setup page...");
         console.error("Enter your Client ID in the browser.\n");
       }
-      exec(`open "${authPageUrl}"`);
+      // Use spawn instead of exec to avoid shell injection
+      spawn("open", [authPageUrl], { stdio: "ignore" });
     });
 
     setTimeout(() => {

@@ -90,7 +90,8 @@ export class SpotifyClient {
   private async apiRequest<T>(
     method: string,
     path: string,
-    body?: unknown
+    body?: unknown,
+    retries = 0
   ): Promise<T> {
     const token = await this.ensureAuth();
     const url = `${API_BASE}${path}`;
@@ -104,15 +105,15 @@ export class SpotifyClient {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
 
-    if (res.status === 429) {
+    if (res.status === 429 && retries < 3) {
       const retryAfter = parseInt(res.headers.get("Retry-After") || "1", 10);
       await new Promise((r) => setTimeout(r, retryAfter * 1000));
-      return this.apiRequest(method, path, body);
+      return this.apiRequest(method, path, body, retries + 1);
     }
 
-    if (res.status === 401) {
+    if (res.status === 401 && retries < 1) {
       await this.refreshToken();
-      return this.apiRequest(method, path, body);
+      return this.apiRequest(method, path, body, retries + 1);
     }
 
     if (res.status === 204) return undefined as T;
