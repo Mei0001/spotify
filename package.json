@@ -1,0 +1,20 @@
+{
+  "name": "spotify-weather-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "npx tsx src/server.ts",
+    "auth": "npx tsx src/services/spotify-auth.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.1",
+    "@vercel/node": "^5.7.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
